@@ -33,17 +33,26 @@
 
 /* Node, List, and Iterator are the only data structures used currently. */
 
+/** adlist 节点数据结构，一个前驱指针、一个后继指针、一个 value 用来存放数据 */
 typedef struct listNode {
     struct listNode *prev;
     struct listNode *next;
     void *value;
 } listNode;
 
+/** 链表操作迭代器 */
 typedef struct listIter {
     listNode *next;
     int direction;
 } listIter;
 
+/**
+ * adlist 结构
+ *   head 头结点指针
+ *   tail 尾结点指针
+ *   dup、free、match 是三个回调，分别用来复制、释放、比较链表
+ *   len 链表长度
+ */
 typedef struct list {
     listNode *head;
     listNode *tail;
