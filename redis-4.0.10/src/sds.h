@@ -41,6 +41,17 @@
 
 typedef char *sds;
 
+/**
+ * SDS 集中不同的类型，不同的类型支持的字符串长度不同
+ * sdshdr5 未使用
+ * 
+ * 2.9 之前的版本没有做区分：
+ *     struct sdshdr {
+ *         int len;
+ *         int free;
+ *         char buf[];
+ *     };
+ */
 /* Note: sdshdr5 is never used, we just access the flags byte directly.
  * However is here to document the layout of type 5 SDS strings. */
 struct __attribute__ ((__packed__)) sdshdr5 {
@@ -72,17 +83,31 @@ struct __attribute__ ((__packed__)) sdshdr64 {
     char buf[];
 };
 
+/** SDS 五种类型宏定义 */
 #define SDS_TYPE_5  0
 #define SDS_TYPE_8  1
 #define SDS_TYPE_16 2
 #define SDS_TYPE_32 3
 #define SDS_TYPE_64 4
+
+/** 类型掩码，用来通过位运算计算类型值 */
 #define SDS_TYPE_MASK 7
+
+/** 类型值存储占用的长度，只占三位，这也是用 7 做掩码的原因 */
 #define SDS_TYPE_BITS 3
+
 #define SDS_HDR_VAR(T,s) struct sdshdr##T *sh = (void*)((s)-(sizeof(struct sdshdr##T)));
+
+// 获取头，并且将其转化为结构体返回
 #define SDS_HDR(T,s) ((struct sdshdr##T *)((s)-(sizeof(struct sdshdr##T))))
 #define SDS_TYPE_5_LEN(f) ((f)>>SDS_TYPE_BITS)
 
+/**
+ * 获取对应字符串的 len 信息；
+ *     先计算编码类型
+ *     再根据编码类型找到头信息，将其转化为结构体
+ *     最后返回 len 成员
+ */
 static inline size_t sdslen(const sds s) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -100,6 +125,7 @@ static inline size_t sdslen(const sds s) {
     return 0;
 }
 
+/** 计算字符串的可用空间大小 */
 static inline size_t sdsavail(const sds s) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -126,6 +152,7 @@ static inline size_t sdsavail(const sds s) {
     return 0;
 }
 
+/** 将 sds 的 len 更新为 newlen */
 static inline void sdssetlen(sds s, size_t newlen) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
@@ -193,6 +220,7 @@ static inline size_t sdsalloc(const sds s) {
     return 0;
 }
 
+/** 设置已分配空间大小到头结构中 */
 static inline void sdssetalloc(sds s, size_t newlen) {
     unsigned char flags = s[-1];
     switch(flags&SDS_TYPE_MASK) {
